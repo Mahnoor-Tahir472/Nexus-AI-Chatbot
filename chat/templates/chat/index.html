@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus AI | Next-Gen Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Marked.js for Markdown support (like real AI) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
+        body { 
+            background-color: #0b0e14; 
+            font-family: 'Inter', sans-serif;
+            color: #e2e8f0;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-container { 
+            height: calc(100vh - 180px); 
+            scroll-behavior: smooth;
+        }
+
+        /* Message Bubbles */
+        .message-row { display: flex; width: 100%; margin-bottom: 1.5rem; }
+        .user-row { justify-content: flex-end; }
+        .bot-row { justify-content: flex-start; }
+
+        .bubble {
+            max-width: 85%;
+            padding: 1rem 1.25rem;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .user-bubble {
+            background: #3b82f6;
+            color: white;
+            border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+        }
+
+        .bot-bubble {
+            background: #1e293b;
+            color: #cbd5e1;
+            border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Typing Animation */
+        .typing-dot {
+            width: 6px; height: 6px; background: #94a3b8;
+            border-radius: 50%; display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Markdown Styling */
+        .bot-bubble code { background: #0f172a; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; color: #60a5fa; }
+        .bot-bubble pre { background: #0f172a; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; overflow-x: auto; }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center overflow-hidden">
+
+    <div class="w-full h-full max-w-5xl flex flex-col glass-panel shadow-2xl lg:rounded-2xl lg:h-[90vh]">
+        
+        <!-- Header -->
+        <header class="p-5 border-b border-slate-700/50 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-robot text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-semibold text-white leading-none">Nexus AI</h1>
+                    <span class="text-xs text-green-400 flex items-center gap-1 mt-1">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                        Online & Reasoning
+                    </span>
+                </div>
+            </div>
+            <button class="text-slate-400 hover:text-white transition-colors">
+                <i class="fa-solid fa-gear text-xl"></i>
+            </button>
+        </header>
+
+        <!-- Chat Content -->
+        <main id="chat-box" class="chat-container overflow-y-auto p-6 scrollbar-hide">
+            <div class="bot-row message-row">
+                <div class="bot-bubble bubble">
+                    Welcome to the future of interaction. I am <strong>Nexus AI</strong>. How can I assist your workflow today?
+                </div>
+            </div>
+        </main>
+
+        <!-- Input Section -->
+        <footer class="p-6 bg-slate-800/30">
+            <form id="chat-form" class="max-w-3xl mx-auto relative group">
+                {% csrf_token %}
+                <input type="text" id="user-input" autocomplete="off"
+                       placeholder="Message Nexus AI..." 
+                       class="w-full bg-slate-900/80 text-white border border-slate-700 rounded-2xl pl-5 pr-16 py-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-inner">
+                
+                <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-500 text-white p-2.5 rounded-xl transition-all active:scale-95 shadow-lg">
+                    <i class="fa-solid fa-arrow-up text-lg"></i>
+                </button>
+            </form>
+            <p class="text-[10px] text-center text-slate-500 mt-3 uppercase tracking-widest font-medium">
+                Powered by Gemini Pro & Django
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+
+        function createMessageElement(sender) {
+            const row = document.createElement('div');
+            row.className = `message-row ${sender === 'user' ? 'user-row' : 'bot-row'}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = `bubble ${sender === 'user' ? 'user-bubble' : 'bot-bubble'} transition-all duration-300 transform scale-95 opacity-0`;
+            
+            row.appendChild(bubble);
+            chatBox.appendChild(row);
+            
+            // Animation trigger
+            setTimeout(() => {
+                bubble.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+            
+            return bubble;
+        }
+
+        function showTypingIndicator() {
+            const bubble = createMessageElement('bot');
+            bubble.id = 'typing-indicator';
+            bubble.innerHTML = `
+                <div class="flex gap-1 py-1">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
+            `;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return bubble;
+        }
+
+        chatForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // 1. User Message
+            const userBubble = createMessageElement('user');
+            userBubble.innerText = message;
+            userInput.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // 2. Typing Indicator
+            const indicator = showTypingIndicator();
+
+            // 3. Backend Call
+            const formData = new FormData(chatForm);
+            formData.append('message', message);
+
+            try {
+                const response = await fetch('/get-response/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+                });
+                const data = await response.json();
+                
+                // 4. Replace Indicator with real text (Parsed as Markdown)
+                indicator.id = '';
+                indicator.innerHTML = marked.parse(data.response);
+                
+            } catch (error) {
+                indicator.innerHTML = "<span class='text-red-400'>System Error: Connection Lost.</span>";
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        };
+    </script>
+</body>
+</html>
